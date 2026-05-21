@@ -20,8 +20,8 @@ class ExperimentConfig:
         """設置基礎路徑"""
         if self.environment == 'runpod':
             self.base_paths = {
-                'training_base': "/workspace/data_with_APIDMS_img/training",
-                'testing_base': "/workspace/data_with_APIDMS_img/testing", 
+                'training_base': "/workspace/data/training",
+                'testing_base': "/workspace/data/testing",
                 'result_base': "/workspace/results",
                 'template_dir': "/workspace/Results_folder_structure_2"
             }
