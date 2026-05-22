@@ -18,48 +18,25 @@ from pathlib import Path
 
 def extract_info_from_folder(folder_name):
     """從資料夾名稱提取信息"""
-    # 更靈活的正則表達式，支持包含下劃線的資料集名稱
     patterns = [
-        r'Results_([^_]+)_(\d+)shot_(?:seed(\d+)|run(\d+))',  # 原始模式
-        r'Results_([^_]+(?:_[^_]+)*)_(\d+)shot_(?:seed(\d+)|run(\d+))',  # 支持多個下劃線
-        r'Results_(.+?)_(\d+)shot_(?:seed(\d+)|run(\d+))'  # 最寬鬆的模式
+        # 新短格式: R_{dataset}_{shots}s_r{run_id} 或 R_{dataset}_{shots}s_s{seed}
+        (r'R_(.+?)_(\d+)s_r(\d+)$', 'run'),
+        (r'R_(.+?)_(\d+)s_s(\d+)$', 'seed'),
+        # 舊長格式: Results_{dataset}_{shots}shot_run{run_id} 或 seed{seed}
+        (r'Results_(.+?)_(\d+)shot_run(\d+)$', 'run'),
+        (r'Results_(.+?)_(\d+)shot_seed(\d+)$', 'seed'),
     ]
-    
-    for pattern in patterns:
+
+    for pattern, id_type in patterns:
         match = re.match(pattern, folder_name)
         if match:
             return {
                 'dataset': match.group(1),
                 'shots': int(match.group(2)),
-                'seed_from_name': int(match.group(3)) if match.group(3) else None,
-                'run_id': int(match.group(4)) if match.group(4) else None
+                'seed_from_name': int(match.group(3)) if id_type == 'seed' else None,
+                'run_id': int(match.group(3)) if id_type == 'run' else None,
             }
-    
-    # 如果都不匹配，嘗試手動解析
-    if folder_name.startswith('Results_') and '_shot_' in folder_name:
-        parts = folder_name.split('_')
-        if len(parts) >= 4:
-            # 找到 shot 的位置
-            shot_idx = None
-            for i, part in enumerate(parts):
-                if part == 'shot':
-                    shot_idx = i
-                    break
-            
-            if shot_idx and shot_idx > 1:
-                dataset = '_'.join(parts[1:shot_idx])
-                shots = int(parts[shot_idx-1])
-                
-                # 檢查是否有 seed 或 run
-                if shot_idx + 2 < len(parts) and parts[shot_idx + 1] in ['seed', 'run']:
-                    seed_or_run = int(parts[shot_idx + 2])
-                    return {
-                        'dataset': dataset,
-                        'shots': shots,
-                        'seed_from_name': seed_or_run if parts[shot_idx + 1] == 'seed' else None,
-                        'run_id': seed_or_run if parts[shot_idx + 1] == 'run' else None
-                    }
-    
+
     return None
 
 def get_actual_seed(experiment_folder):
